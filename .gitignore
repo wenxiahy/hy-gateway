@@ -1,0 +1,14 @@
+.project
+.DS_Store
+.classpath
+*.iml
+*.log
+
+.settings/
+.idea/
+target/
+logs/
+build/
+.gradle/
+
+src/main/resources/application.yml

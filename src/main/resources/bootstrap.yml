@@ -1,0 +1,48 @@
+server:
+  port: 8080
+spring:
+  profiles: default
+  application:
+    name: hy-gateway
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: hy-config-server
+      label: master
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://47.75.199.218:8000
+
+---
+server:
+  port: 8080
+spring:
+  profiles: prod
+  application:
+    name: hy-gateway
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: hy-config-server
+      label: master
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://hy-eureka-server-1:8761/eureka/,http://hy-eureka-server-2:8761/eureka/
