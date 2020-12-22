@@ -1,20 +1,22 @@
 package com.wenxiahy.hy.gateway.filter;
 
+import com.wenxiahy.hy.common.bean.auth.AuthenticationUser;
+import com.wenxiahy.hy.common.support.HyResponse;
+import com.wenxiahy.hy.common.util.JacksonUtils;
+import com.wenxiahy.hy.gateway.feign.AuthFeignClient;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.Charset;
-import java.util.Date;
+import javax.annotation.Resource;
 
 /**
  * @Author zhouw
@@ -22,7 +24,11 @@ import java.util.Date;
  * @Date 2020-12-20
  */
 @Component
+@RestController
 public class AuthFilter implements GlobalFilter, Ordered {
+
+    @Resource(type = AuthFeignClient.class)
+    private AuthFeignClient authFeignClient;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -31,28 +37,25 @@ public class AuthFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
-        String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String token = request.getHeaders().getFirst("Authorization");
         if (StringUtils.isBlank(token)) {
-            return authError(response, path);
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return response.setComplete();
         }
 
-        return chain.filter(exchange);
-    }
+        HyResponse<AuthenticationUser> authResponse = authFeignClient.valid(token);
+        AuthenticationUser authUser = authResponse.getResult();
+        if (authUser == null) {
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return response.setComplete();
+        }
 
-    private Mono<Void> authError(ServerHttpResponse response, String path) {
-        StringBuilder sb = new StringBuilder("{");
-        sb.append("\"timestamp\": \"").append(new Date()).append("\",");
-        sb.append("\"path\": \"").append(path).append("\",");
-        sb.append("\"status\": 404,");
-        sb.append("\"error\": \"Unauthorized\"");
-        sb.append("}");
+        ServerHttpRequest newRequest = request.mutate().header("X-Auth-User", JacksonUtils.object2Json(authUser)).build();
+        ServerWebExchange newExchange = exchange.mutate().request(newRequest).build();
 
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().setContentType(MediaType.APPLICATION_JSON_UTF8);
-        DataBuffer buffer = response.bufferFactory().wrap(sb.toString().getBytes(Charset.forName("UTF-8")));
-
-        return response.writeWith(Flux.just(buffer));
+        return chain.filter(newExchange);
     }
 
     @Override

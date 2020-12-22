@@ -16,6 +16,9 @@ eureka:
   client:
     service-url:
       defaultZone: http://47.75.199.218:8000/eureka/
+feign:
+  hystrix:
+    enabled: true
 
 ---
 ### test环境配置
@@ -42,6 +45,9 @@ eureka:
   client:
     service-url:
       defaultZone: http://47.75.199.218:8000/eureka/
+feign:
+  hystrix:
+    enabled: true
 
 ---
 ### prod环境配置
@@ -68,3 +74,6 @@ eureka:
   client:
     service-url:
       defaultZone: http://hy-eureka-server-1:8761/eureka/,http://hy-eureka-server-2:8761/eureka/
+feign:
+  hystrix:
+    enabled: true
