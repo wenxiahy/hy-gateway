@@ -65,7 +65,21 @@
         <dependency>
             <groupId>com.wenxiahy</groupId>
             <artifactId>hy-common</artifactId>
-            <version>1.0.5</version>
+            <version>1.0.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-webmvc</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-web</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

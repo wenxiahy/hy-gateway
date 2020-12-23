@@ -5,6 +5,8 @@ spring:
   application:
     name: hy-gateway
   cloud:
+    config:
+      enabled: false
     gateway:
       discovery:
         locator:

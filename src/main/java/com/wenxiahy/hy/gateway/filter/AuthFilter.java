@@ -2,9 +2,13 @@ package com.wenxiahy.hy.gateway.filter;
 
 import com.wenxiahy.hy.common.bean.auth.AuthenticationUser;
 import com.wenxiahy.hy.common.support.HyResponse;
+import com.wenxiahy.hy.common.util.Base64Utils;
+import com.wenxiahy.hy.common.util.HyStringUtils;
 import com.wenxiahy.hy.common.util.JacksonUtils;
 import com.wenxiahy.hy.gateway.feign.AuthFeignClient;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -26,6 +30,8 @@ import javax.annotation.Resource;
 @Component
 @RestController
 public class AuthFilter implements GlobalFilter, Ordered {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthFilter.class);
 
     @Resource(type = AuthFeignClient.class)
     private AuthFeignClient authFeignClient;
@@ -52,10 +58,18 @@ public class AuthFilter implements GlobalFilter, Ordered {
             return response.setComplete();
         }
 
-        ServerHttpRequest newRequest = request.mutate().header("X-Auth-User", JacksonUtils.object2Json(authUser)).build();
-        ServerWebExchange newExchange = exchange.mutate().request(newRequest).build();
+        try {
+            String authJson = JacksonUtils.object2Json(authUser);
+            String base64Str = Base64Utils.encryptNormalBase64(authJson);
+            String xor = HyStringUtils.xorEncry(base64Str);
 
-        return chain.filter(newExchange);
+            ServerHttpRequest newRequest = request.mutate().header("X-Auth-User", xor).build();
+            ServerWebExchange newExchange = exchange.mutate().request(newRequest).build();
+            return chain.filter(newExchange);
+        } catch (Exception e) {
+            LOGGER.error("生成Header: X-Auth-User异常", e);
+            return Mono.error(e);
+        }
     }
 
     @Override
